@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Laravel 11 Reverb WebSocket Demo</title>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Pusher 官方 CDN（Echo 依赖用） -->
+    <!--<script src="https://js.pusher.com/8.2/pusher.min.js"></script>
+    &lt;!&ndash; 100% 可用的 Laravel Echo CDN（官方推荐的稳定版） &ndash;&gt;
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1/dist/echo.iife.js"></script>-->
+
+    <!-- 1. 加载一个与 Reverb 兼容的 Pusher 协议库 (这是临时方案) -->
+    <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.2.0/dist/web/pusher.min.js"></script>
+    <!-- 2. 加载 Laravel Echo -->
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1/dist/echo.iife.js"></script>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        #log { background: #000; color: #0f0; padding: 10px; height: 300px; overflow-y: auto; }
+    </style>
+
+</head>
+<body>
+
+<h2>Laravel 11 + Reverb WebSocket Demo</h2>
+
+<div>
+    <input type="text" id="email" placeholder="email" value="test@test.com">
+    <input type="password" id="password" placeholder="password" value="123456">
+    <button id="login">登录并启动 WebSocket</button>
+    <button id="sendMsgBtn">Send Push to user 1</button>
+</div>
+
+<h3>实时消息：</h3>
+<div id="log"></div>
+
+<script>
+    function log(msg) {
+        $("#log").append("<div>" + msg + "</div>");
+    }
+
+    let token = null;
+    let userId = null;
+
+    $("#login").click(async function () {
+        let email = $("#email").val();
+        let password = $("#password").val();
+
+        const res = await fetch("http://localhost:8000/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!data.token) {
+            alert("登录失败");
+            return;
+        }
+
+        token = data.token;
+        userId = data.user.id;
+
+        log("✅ 登录成功！");
+        log("用户 ID = " + userId);
+
+        connectWebSocket();
+    });
+
+    $('#sendMsgBtn').click(async function(){
+        if (!token) { alert('请先登录'); return; }
+        const res = await fetch('/api/push', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({user_id: 1, msg: 'Hello from front-end'})
+        });
+        const d = await res.json();
+        log('push 返回: ' + JSON.stringify(d));
+    });
+
+
+    function connectWebSocket() {
+
+        log("🔌 初始化连接中...")
+
+        let options = {
+            broadcaster: 'pusher',
+            key: 'uibue7bno0s6yitvqexw',
+            cluster: 'local',
+            wsHost: '127.0.0.1',
+            wsPort: 8080,
+            forceTLS: false,
+            auth: {
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            }
+        };
+        console.log('参数'+ options);
+        window.Echo = new window.Echo(options);
+
+        // ===== 新增：获取内部的 Pusher 实例并手动订阅 =====
+        const pusher = window.Echo.connector.pusher;
+        const channelName = 'private-user.' + userId; // 注意：这里频道名前必须加上 'private-'
+
+        // 订阅频道
+        const channel = pusher.subscribe(channelName);
+
+        // 绑定连接成功事件
+        channel.bind('pusher:subscription_succeeded', () => {
+            console.log('✅ 私有频道订阅成功，认证已通过！');
+        });
+
+        // 绑定自定义事件
+        channel.bind('UserNotification', (e) => {
+            log("📩 收到推送: " + JSON.stringify(e));
+        });
+
+        // 绑定订阅错误事件
+        channel.bind('pusher:subscription_error', (status) => {
+            console.error('❌ 私有频道订阅失败:', status);
+        });
+
+        log("测试已经链接...")
+
+        // 监听私有频道
+        /*window.Echo.channel('test')
+            .listen('UserNotification', (e) => {
+                log("📩 收到公共推送: " + JSON.stringify(e));
+            });*/
+        window.Echo.private("user." + userId)
+            .listen("UserNotification", (e) => {
+                log("📩 收到推送: " + JSON.stringify(e));
+            }).error((err) => {
+            console.error("订阅错误", err);
+        });
+
+        log("🎧 WebSocket 监听已启动：private:user." + userId);
+
+    }
+</script>
+
+</body>
+</html>
