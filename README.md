@@ -83,17 +83,15 @@ composer依赖安装完毕后 ,依次启动命令如下：
 安装方式（Laravel 11 适配）
 
 Laravel 11 对应的版本是：
+- 方案 1
 ✔ beyondcode/laravel-websockets:^2.0（官方维护，支持 PHP8+）
 
 composer require beyondcode/laravel-websockets
-
-
 发布配置：
 
 php artisan vendor:publish --tag=websockets-config
 php artisan vendor:publish --tag=websockets-migrations
 php artisan migrate
-
 
 启动 WebSocket：
 
@@ -102,7 +100,7 @@ php artisan websockets:serve
 
 这是 最推荐的方案。
 
-方案 2：Laravel Reverb（Laravel 官方 WebSocket 解决方案）
+- 方案 2：Laravel Reverb（Laravel 官方 WebSocket 解决方案）
 
 ⚠️ Laravel 11 已经内置官方 Reverb 支持，这是 Laravel 官方最近发布的 WebSocket 系统（2024 年发布）。
 
@@ -117,14 +115,11 @@ Laravel 官方原生支持
 安装 Reverb（Laravel 11 官方 WebSocket）
 php artisan install:broadcasting
 
-
 开启 Reverb：
 
 php artisan reverb:start
 
-
 Reverb 是最近的新工具，非常稳定，也没有 beyondcode 的历史兼容问题。
-
 👉 目前该系统选择这个
 
 ## 目前只跑win系统,linux系统注意配置nginx反向代理
@@ -159,16 +154,16 @@ server_name your-domain.com;
 [program:reverb]
 
 # 配置文件/etc/supervisor/conf.d/reverb.conf
-command=php /var/www/websocket-demo/artisan reverb:start
+``command=php /var/www/websocket-demo/artisan reverb:start
 user=www-data
 autostart=true
 autorestart=true
 redirect_stderr=true
-stdout_logfile=/var/log/reverb.log
+stdout_logfile=/var/log/reverb.log``
 
 # 相关使用命令
 
-supervisorctl reread
-supervisorctl update
-supervisorctl start reverb
+`supervisorctl reread`
+`supervisorctl update`
+`supervisorctl start reverb`
 
