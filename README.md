@@ -82,8 +82,8 @@ composer依赖安装完毕后 ,依次启动命令如下：
 ## laravel支持的websocket的方式
 安装方式（Laravel 11 适配）
 
+- 方案 1:最推荐的方案
 Laravel 11 对应的版本是：
-- 方案 1
 ✔ beyondcode/laravel-websockets:^2.0（官方维护，支持 PHP8+）
 
 composer require beyondcode/laravel-websockets
@@ -97,8 +97,6 @@ php artisan migrate
 
 php artisan websockets:serve
 
-
-这是 最推荐的方案。
 
 - 方案 2：Laravel Reverb（Laravel 官方 WebSocket 解决方案）
 
